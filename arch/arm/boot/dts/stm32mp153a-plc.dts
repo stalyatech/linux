@@ -18,7 +18,7 @@
 
 / {
 	model = "GMT Control smartPLC-SBC";
-	compatible = "st,stm32mp153a-plc", "st,stm32mp153";
+	compatible = "st,stm32mp153a-plc", "st,stm32mp153", "st,stm32mp157";
 
 	aliases {
 		serial0 = &usart3;
@@ -30,4 +30,13 @@
 	chosen {
 		stdout-path = "serial0:115200n8";
 	};
+
+	wifi_pwrseq: wifi-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&gpiob 14 GPIO_ACTIVE_LOW>;
+	};
+};
+
+&optee {
+	status = "okay";
 };

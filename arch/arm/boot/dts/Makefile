@@ -1004,6 +1004,7 @@ dtb-$(CONFIG_ARCH_STM32) += \
 	stm32mp157c-ev1.dtb \
 	stm32mp157d-ev1.dtb \
 	stm32mp157f-ev1.dtb \
+	stm32mp153a-plc.dtb \
 	stm32mp157c-ev1-a7-examples.dtb \
 	stm32mp157c-ev1-m4-examples.dtb \
 	stm32mp157f-ev1-a7-examples.dtb \

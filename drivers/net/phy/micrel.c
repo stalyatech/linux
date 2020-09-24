@@ -393,10 +393,6 @@ static int ksz8061_config_init(struct phy_device *phydev)
 	return kszphy_config_init(phydev);
 }
 
-static int ksz8795_match_phy_device(struct phy_device *phydev)
-{
-	return ksz8051_ksz8795_match_phy_device(phydev, PHY_ID_KSZ87XX);
-}
 
 static int ksz9021_load_values_from_of(struct phy_device *phydev,
 				       const struct device_node *of_node,
@@ -977,6 +973,95 @@ static int kszphy_probe(struct phy_device *phydev)
 	return 0;
 }
 
+#define KSZ87XX_PHY_STAT_10M_HALF	0x0200
+#define KSZ87XX_PHY_STAT_100M_HALF	0x0300
+#define KSZ87XX_PHY_STAT_10M_FULL	0x0500
+#define KSZ87XX_PHY_STAT_100M_FULL	0x0600
+static int ksz87xx_read_status(struct phy_device *phydev)
+{
+	int err, old_link = phydev->link;
+
+	/* Update the link, but return if there was an error */
+	err = genphy_update_link(phydev);
+	if (err)
+		return err;
+
+	/* why bother the PHY if nothing can have changed */
+	if (phydev->autoneg == AUTONEG_ENABLE && old_link && phydev->link)
+		return 0;
+
+	phydev->speed = SPEED_UNKNOWN;
+	phydev->duplex = DUPLEX_UNKNOWN;
+	phydev->pause = 0;
+	phydev->asym_pause = 0;
+
+	err = genphy_read_lpa(phydev);
+	if (err < 0)
+		return err;
+
+	if (phydev->autoneg == AUTONEG_ENABLE && phydev->autoneg_complete) {
+		int phy_stat = phy_read(phydev, MII_KSZPHY_CTRL);
+
+		if (phy_stat < 0)
+			return phy_stat;
+
+		if ((phy_stat & KSZ87XX_PHY_STAT_100M_FULL) == KSZ87XX_PHY_STAT_100M_FULL) {
+			phydev->speed = SPEED_100;
+			phydev->duplex = DUPLEX_FULL;
+		}
+		else if ((phy_stat & KSZ87XX_PHY_STAT_100M_HALF) == KSZ87XX_PHY_STAT_100M_HALF) {
+			phydev->speed = SPEED_100;
+			phydev->duplex = DUPLEX_HALF;
+		}
+		else if ((phy_stat & KSZ87XX_PHY_STAT_10M_FULL) == KSZ87XX_PHY_STAT_10M_FULL) {
+			phydev->speed = SPEED_10;
+			phydev->duplex = DUPLEX_FULL;
+		}
+		else if ((phy_stat & KSZ87XX_PHY_STAT_10M_HALF) == KSZ87XX_PHY_STAT_10M_HALF) {
+			phydev->speed = SPEED_10;
+			phydev->duplex = DUPLEX_HALF;
+		}
+	} else if (phydev->autoneg == AUTONEG_DISABLE) {
+		int bmcr = phy_read(phydev, MII_BMCR);
+
+		if (bmcr < 0)
+			return bmcr;
+
+		if (bmcr & BMCR_FULLDPLX)
+			phydev->duplex = DUPLEX_FULL;
+		else
+			phydev->duplex = DUPLEX_HALF;
+
+		if (bmcr & BMCR_SPEED1000)
+			phydev->speed = SPEED_1000;
+		else if (bmcr & BMCR_SPEED100)
+			phydev->speed = SPEED_100;
+		else
+			phydev->speed = SPEED_10;
+	}
+
+	return 0;
+}
+
+static int ksz87xx_match_phy_device(struct phy_device *phydev)
+{
+	int ret;
+
+	if ((phydev->phy_id & MICREL_PHY_ID_MASK) != PHY_ID_KSZ87XX)
+		return 0;
+
+	ret = phy_read(phydev, MII_BMSR);
+	if (ret < 0)
+		return ret;
+
+	/* KSZ8051 PHY and KSZ8794/KSZ8795/KSZ8765 switch share the same
+	 * exact PHY ID. However, they can be told apart by the extended
+	 * capability registers presence. The KSZ8051 PHY has them while
+	 * the switch does not.
+	 */
+	return ((ret & BMSR_ERCAP) == 0) ? ret : 0;
+}
+
 static struct phy_driver ksphy_driver[] = {
 {
 	.phy_id		= PHY_ID_KS8737,
@@ -1174,14 +1259,16 @@ static struct phy_driver ksphy_driver[] = {
 	.suspend	= genphy_suspend,
 	.resume		= genphy_resume,
 }, {
-	.name		= "Micrel KSZ87XX Switch",
+	.phy_id		 = PHY_ID_KSZ87XX,
+	.phy_id_mask = MICREL_PHY_ID_MASK,
+	.name		 = "Micrel KSZ87XX Switch",
 	/* PHY_BASIC_FEATURES */
-	.config_init	= kszphy_config_init,
-	.config_aneg	= ksz8873mll_config_aneg,
-	.read_status	= ksz8873mll_read_status,
-	.match_phy_device = ksz8795_match_phy_device,
-	.suspend	= genphy_suspend,
-	.resume		= genphy_resume,
+	.config_aneg = genphy_config_aneg,
+	.read_status = ksz87xx_read_status,
+	.aneg_done	 = genphy_aneg_done,
+	.match_phy_device = ksz87xx_match_phy_device,
+	.suspend	 = genphy_suspend,
+	.resume		 = genphy_resume,
 }, {
 	.phy_id		= PHY_ID_KSZ9477,
 	.phy_id_mask	= MICREL_PHY_ID_MASK,

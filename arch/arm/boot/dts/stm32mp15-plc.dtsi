@@ -4,7 +4,8 @@
  * Author: Alexandre Torgue <alexandre.torgue@st.com> for STMicroelectronics.
  */
 
-#include <dt-bindings/gpio/gpio.h>
+#include "stm32mp157-m4-srm.dtsi"
+#include "stm32mp157-m4-srm-pinctrl.dtsi"
 
 / {
 	memory@c0000000 {
@@ -86,6 +87,7 @@
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
 		regulator-always-on;
+		regulator-boot-on;
 	};
 
 	vddcore: vddcore {
@@ -94,6 +96,7 @@
 		regulator-min-microvolt = <1200000>;
 		regulator-max-microvolt = <1200000>;
 		regulator-always-on;
+		regulator-boot-on;
 		lp-stop {
 			regulator-on-in-suspend;
 		};
@@ -111,6 +114,7 @@
 		regulator-min-microvolt = <1350000>;
 		regulator-max-microvolt = <1350000>;
 		regulator-always-on;
+		regulator-boot-on;
 		lp-stop {
 			regulator-on-in-suspend;
 		};
@@ -128,6 +132,7 @@
 		regulator-min-microvolt = <675000>;
 		regulator-max-microvolt = <675000>;
 		regulator-always-on;
+		regulator-boot-on;
 		lp-stop {
 			regulator-off-in-suspend;
 		};
@@ -145,6 +150,7 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		regulator-always-on;
+		regulator-boot-on;
 		lp-stop {
 			regulator-on-in-suspend;
 		};
@@ -162,6 +168,7 @@
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
 		regulator-always-on;
+		regulator-boot-on;
 		standby-ddr-sr {
 			regulator-on-in-suspend;
 		};
@@ -171,14 +178,67 @@
 	};
 
 	vdd_eth: vdd_eth {
-		compatible = "regulator-fixed";
+		compatible = "regulator-gpio";
 		regulator-name = "vdd_eth";
+		regulator-type = "voltage";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpioc 3 GPIO_ACTIVE_HIGH>;
-		regulator-always-on;
-		regulator-boot-on;
+		gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>;
+       	gpios-states = <1>;
+       	states = <3300000 1 0 0>;	
 	};
+
+	vdd_wifi: vdd_wifi {
+		compatible = "regulator-gpio";
+		regulator-name = "vdd_wifi";
+		regulator-type = "voltage";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		enable-active-high;
+		enable-gpios = <&gpiod 15 GPIO_ACTIVE_HIGH>;
+		states = <3300000 0>;
+	};
+};
+
+&adc {
+	pinctrl-names = "default";
+	pinctrl-0 = <&adc12_pins_default>;
+	vdd-supply = <&vdd>;
+	vdda-supply = <&vdd>;
+	vref-supply = <&vrefbuf>;
+	status = "disabled";
+	adc1: adc@0 {
+		/*
+		 * Power supply voltage
+		 */
+		st,min-sample-time-nsecs = <5000>;
+		st,adc-channels = <3>;
+		status = "okay";
+	};
+
+	adc2: adc@100 {
+		status = "okay";
+	};
+};
+
+&cpu0{
+	cpu-supply = <&vddcore>;
+};
+
+&cpu1{
+	cpu-supply = <&vddcore>;
+};
+
+&crc1 {
+	status = "okay";
+};
+
+&dma1 {
+	sram = <&dma_pool>;
+};
+
+&dma2 {
+	sram = <&dma_pool>;
 };
 
 &dts {
@@ -187,22 +247,55 @@
 
 &ethernet0 {
 	status = "okay";
+	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&eth0_pins_default>;
 	pinctrl-1 = <&eth0_pins_sleep>;
-	pinctrl-names = "default", "sleep";
-	phy-mode = "rmii";
 	max-speed = <100>;
+	phy-mode = "rmii";
+	phy-supply = <&vdd_eth>;
 	phy-handle = <&phy0>;
-	phy-reset-gpios = <&gpioe 3 GPIO_ACTIVE_LOW>;
+	phy-reset-gpios = <&gpioe 2 GPIO_ACTIVE_LOW>;
+	phy-reset-duration = <10>; /* millisecond */
 
-	mdio0 {
+	mdio: ksz8794@0 {
 		#address-cells = <1>;
 		#size-cells = <0>;
 		compatible = "snps,dwmac-mdio";
 
-		phy0: ethernet-phy@0 {
+		phy0: ksz8794-phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <0>;
 		};
+	};
+};
+
+&hash1 {
+	status = "okay";
+};
+
+&i2c2 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&i2c2_pins_default>;
+	pinctrl-1 = <&i2c2_pins_sleep>;
+	clock-frequency = <100000>;
+	status = "okay";
+	/* spare dmas for other usage */
+	/delete-property/dmas;
+	/delete-property/dma-names;
+
+	usb2514b: usb-hub@2c {
+		compatible = "microchip,usb2514b";
+		reg = <0x2c>;
+		reset-gpios = <&gpioe 6 GPIO_ACTIVE_LOW>;
+		string-support;
+		manufacturer = "GMT Control";
+		product = "smartPLC-SBC";
+		serial = "1234567890A";
+		/* correct misplaced usb connectors on port 1,2 */
+		swap-dx-lanes = <1 2>;
+
+		/* modem on port 1 */
+		/* gnss on port 2 */
 	};
 };
 
@@ -239,6 +332,29 @@
 	status = "okay";
 };
 
+&sdmmc1 {
+	arm,primecell-periphid = <0x10153180>;
+	pinctrl-names = "default", "opendrain", "sleep";
+	pinctrl-0 = <&sdmmc1_pins_default>;
+	pinctrl-1 = <&sdmmc1_pins_opendrain>;
+	pinctrl-2 = <&sdmmc1_pins_sleep>;
+	non-removable;
+	st,neg-edge;
+	bus-width = <4>;
+	vmmc-supply = <&vdd_wifi>;
+	mmc-pwrseq = <&wifi_pwrseq>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "disabled";
+};
+
+&sram {
+	dma_pool: dma_pool@0 {
+		reg = <0x50000 0x10000>;
+		pool;
+	};
+};
+
 &timers1 {
 	/* spare dmas for other usage */
 	/delete-property/dmas;
@@ -250,6 +366,7 @@
 };
 
 &timers3 {
+	/* spare dmas for other usage */
 	/delete-property/dmas;
 	/delete-property/dma-names;
 	status = "disabled";
@@ -259,6 +376,7 @@
 };
 
 &timers4 {
+	/* spare dmas for other usage */
 	/delete-property/dmas;
 	/delete-property/dma-names;
 	status = "disabled";
@@ -268,6 +386,7 @@
 };
 
 &timers5 {
+	/* spare dmas for other usage */
 	/delete-property/dmas;
 	/delete-property/dma-names;
 	status = "disabled";
@@ -277,6 +396,7 @@
 };
 
 &timers6 {
+	/* spare dmas for other usage */
 	/delete-property/dmas;
 	/delete-property/dma-names;
 	status = "disabled";
@@ -286,6 +406,7 @@
 };
 
 &timers12 {
+	/* spare dmas for other usage */
 	/delete-property/dmas;
 	/delete-property/dma-names;
 	status = "disabled";
@@ -311,26 +432,6 @@
 		spi-max-frequency = <100000000>;
 		#address-cells = <1>;
 		#size-cells = <1>;
-
-		partition@0 {
-			label = "fsbl";
-			reg = <0x00000000 0x200000>;
-		};
-
-		partition@1 {
-			label = "ssbl1";
-			reg = <0x00200000 0x200000>;
-		};
-
-		partition@2 {
-			label = "ssbl2";
-			reg = <0x00400000 0x200000>;
-		};
-
-		partition@3 {
-			label = "UBI";
-			reg = <0x00600000 0x7A00000>;
-		};
 	};
 
 	flash1: w25q128jv@1 {
@@ -358,18 +459,6 @@
 	status = "okay";
 };
 
-&usbh_ehci {
-	phys = <&usbphyc_port0>;
-	status = "okay";
-};
-
-&usbotg_hs {
-	phys = <&usbphyc_port1 0>;
-	phy-names = "usb2-phy";
-	usb-role-switch;
-	status = "okay";
-};
-
 &usbphyc {
 	status = "okay";
 };
@@ -384,6 +473,21 @@
 	phy-supply = <&vdd_usb>;
 	vdda1v1-supply = <&reg11>;
 	vdda1v8-supply = <&reg18>;
+};
+
+&usbh_ehci {
+	phys = <&usbphyc_port0>;
+	status = "okay";
+};
+
+&usbotg_hs {
+	vbus-supply = <&vin>;
+	vusb_d-supply = <&vdd_usb>;
+	vusb_a-supply = <&reg18>;
+	phys = <&usbphyc_port1 0>;
+	phy-names = "usb2-phy";
+	dr_mode = "peripheral";
+	status = "okay";
 };
 
 &vrefbuf {
