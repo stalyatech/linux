@@ -106,12 +106,6 @@
 				#clock-cells = <1>;
 			};
 		};
-
-		optee: optee {
-			compatible = "linaro,optee-tz";
-			method = "smc";
-			status = "disabled";
-		};
 	};
 
 	psci {
@@ -444,8 +438,11 @@
 			#size-cells = <0>;
 			compatible = "st,stm32-lptimer";
 			reg = <0x40009000 0x400>;
+			interrupts-extended = <&exti 47 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc LPTIM1_K>;
 			clock-names = "mux";
+			power-domains = <&pd_core>;
+			wakeup-source;
 			status = "disabled";
 
 			pwm {
@@ -536,11 +533,10 @@
 			reg = <0x4000e000 0x400>;
 			interrupts-extended = <&exti 27 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc USART2_K>;
-			resets = <&rcc USART2_R>;
 			wakeup-source;
 			power-domains = <&pd_core>;
-			dmas = <&dmamux1 43 0x400 0x5>,
-			       <&dmamux1 44 0x400 0x1>;
+			dmas = <&dmamux1 43 0x400 0x15>,
+			       <&dmamux1 44 0x400 0x11>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -550,11 +546,10 @@
 			reg = <0x4000f000 0x400>;
 			interrupts-extended = <&exti 28 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc USART3_K>;
-			resets = <&rcc USART3_R>;
 			wakeup-source;
 			power-domains = <&pd_core>;
-			dmas = <&dmamux1 45 0x400 0x5>,
-			       <&dmamux1 46 0x400 0x1>;
+			dmas = <&dmamux1 45 0x400 0x15>,
+			       <&dmamux1 46 0x400 0x11>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -564,11 +559,10 @@
 			reg = <0x40010000 0x400>;
 			interrupts-extended = <&exti 30 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc UART4_K>;
-			resets = <&rcc UART4_R>;
 			wakeup-source;
 			power-domains = <&pd_core>;
-			dmas = <&dmamux1 63 0x400 0x5>,
-			       <&dmamux1 64 0x400 0x1>;
+			dmas = <&dmamux1 63 0x400 0x15>,
+			       <&dmamux1 64 0x400 0x11>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -578,11 +572,10 @@
 			reg = <0x40011000 0x400>;
 			interrupts-extended = <&exti 31 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc UART5_K>;
-			resets = <&rcc UART5_R>;
 			wakeup-source;
 			power-domains = <&pd_core>;
-			dmas = <&dmamux1 65 0x400 0x5>,
-			       <&dmamux1 66 0x400 0x1>;
+			dmas = <&dmamux1 65 0x400 0x15>,
+			       <&dmamux1 66 0x400 0x11>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -701,11 +694,10 @@
 			reg = <0x40018000 0x400>;
 			interrupts-extended = <&exti 32 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc UART7_K>;
-			resets = <&rcc UART7_R>;
 			wakeup-source;
 			power-domains = <&pd_core>;
-			dmas = <&dmamux1 79 0x400 0x5>,
-			       <&dmamux1 80 0x400 0x1>;
+			dmas = <&dmamux1 79 0x400 0x15>,
+			       <&dmamux1 80 0x400 0x11>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -715,11 +707,10 @@
 			reg = <0x40019000 0x400>;
 			interrupts-extended = <&exti 33 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc UART8_K>;
-			resets = <&rcc UART8_R>;
 			wakeup-source;
 			power-domains = <&pd_core>;
-			dmas = <&dmamux1 81 0x400 0x5>,
-			       <&dmamux1 82 0x400 0x1>;
+			dmas = <&dmamux1 81 0x400 0x15>,
+			       <&dmamux1 82 0x400 0x11>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -801,11 +792,10 @@
 			reg = <0x44003000 0x400>;
 			interrupts-extended = <&exti 29 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc USART6_K>;
-			resets = <&rcc USART6_R>;
 			wakeup-source;
 			power-domains = <&pd_core>;
-			dmas = <&dmamux1 71 0x400 0x5>,
-			       <&dmamux1 72 0x400 0x1>;
+			dmas = <&dmamux1 71 0x400 0x15>,
+			       <&dmamux1 72 0x400 0x11>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -1365,8 +1355,11 @@
 			#size-cells = <0>;
 			compatible = "st,stm32-lptimer";
 			reg = <0x50021000 0x400>;
+			interrupts-extended = <&exti 48 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc LPTIM2_K>;
 			clock-names = "mux";
+			power-domains = <&pd_core>;
+			wakeup-source;
 			status = "disabled";
 
 			pwm {
@@ -1392,8 +1385,11 @@
 			#size-cells = <0>;
 			compatible = "st,stm32-lptimer";
 			reg = <0x50022000 0x400>;
+			interrupts-extended = <&exti 50 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc LPTIM3_K>;
 			clock-names = "mux";
+			power-domains = <&pd_core>;
+			wakeup-source;
 			status = "disabled";
 
 			pwm {
@@ -1412,8 +1408,11 @@
 		lptimer4: timer@50023000 {
 			compatible = "st,stm32-lptimer";
 			reg = <0x50023000 0x400>;
+			interrupts-extended = <&exti 52 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc LPTIM4_K>;
 			clock-names = "mux";
+			power-domains = <&pd_core>;
+			wakeup-source;
 			status = "disabled";
 
 			pwm {
@@ -1426,8 +1425,11 @@
 		lptimer5: timer@50024000 {
 			compatible = "st,stm32-lptimer";
 			reg = <0x50024000 0x400>;
+			interrupts-extended = <&exti 53 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&rcc LPTIM5_K>;
 			clock-names = "mux";
+			power-domains = <&pd_core>;
+			wakeup-source;
 			status = "disabled";
 
 			pwm {
@@ -1526,23 +1528,38 @@
 			dma-requests = <48>;
 		};
 
-		fmc: nand-controller@58002000 {
-			compatible = "st,stm32mp15-fmc2";
-			reg = <0x58002000 0x1000>,
-			      <0x80000000 0x1000>,
-			      <0x88010000 0x1000>,
-			      <0x88020000 0x1000>,
-			      <0x81000000 0x1000>,
-			      <0x89010000 0x1000>,
-			      <0x89020000 0x1000>;
-			interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
-			dmas = <&mdma1 20 0x2 0x12000a02 0x0 0x0 0x0>,
-			       <&mdma1 20 0x2 0x12000a08 0x0 0x0 0x0>,
-			       <&mdma1 21 0x2 0x12000a0a 0x0 0x0 0x0>;
-			dma-names = "tx", "rx", "ecc";
+		fmc: memory-controller@58002000 {
+			#address-cells = <2>;
+			#size-cells = <1>;
+			compatible = "st,stm32mp1-fmc2-ebi";
+			reg = <0x58002000 0x1000>;
 			clocks = <&rcc FMC_K>;
 			resets = <&rcc FMC_R>;
 			status = "disabled";
+
+			ranges = <0 0 0x60000000 0x04000000>, /* EBI CS 1 */
+				 <1 0 0x64000000 0x04000000>, /* EBI CS 2 */
+				 <2 0 0x68000000 0x04000000>, /* EBI CS 3 */
+				 <3 0 0x6c000000 0x04000000>, /* EBI CS 4 */
+				 <4 0 0x80000000 0x10000000>; /* NAND */
+
+			nand-controller@4,0 {
+				#address-cells = <1>;
+				#size-cells = <0>;
+				compatible = "st,stm32mp1-fmc2-nfc";
+				reg = <4 0x00000000 0x1000>,
+				      <4 0x08010000 0x1000>,
+				      <4 0x08020000 0x1000>,
+				      <4 0x01000000 0x1000>,
+				      <4 0x09010000 0x1000>,
+				      <4 0x09020000 0x1000>;
+				interrupts = <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>;
+				dmas = <&mdma1 20 0x2 0x12000a02 0x0 0x0 0x0>,
+				       <&mdma1 20 0x2 0x12000a08 0x0 0x0 0x0>,
+				       <&mdma1 21 0x2 0x12000a0a 0x0 0x0 0x0>;
+				dma-names = "tx", "rx", "ecc";
+				status = "disabled";
+			};
 		};
 
 		qspi: spi@58003000 {
@@ -1703,7 +1720,6 @@
 			reg = <0x5c000000 0x400>;
 			interrupts-extended = <&exti 26 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&scmi0_clk CK_SCMI0_USART1>;
-			resets = <&scmi0_reset RST_SCMI0_USART1>;
 			wakeup-source;
 			power-domains = <&pd_core>;
 			status = "disabled";
@@ -1767,6 +1783,9 @@
 			};
 			ts_cal2: calib@5e {
 				reg = <0x5e 0x2>;
+			};
+			ethernet_mac_address: mac@e4 {
+				reg = <0xe4 0x6>;
 			};
 		};
 
@@ -1980,9 +1999,9 @@
 			reg = <0x10000000 0x40000>,
 			      <0x30000000 0x40000>,
 			      <0x38000000 0x10000>;
-			resets = <&scmi0_reset RST_SCMI0_MCU>;
-			st,syscfg-holdboot = <&rcc 0x10C 0x1>;
-			st,syscfg-tz = <&rcc 0x000 0x1>;
+			resets = <&scmi0_reset RST_SCMI0_MCU>,
+				 <&scmi0_reset RST_SCMI0_MCU_HOLD_BOOT>;
+			reset-names = "mcu_rst", "hold_boot";
 			st,syscfg-rsc-tbl = <&tamp 0x144 0xFFFFFFFF>;
 			st,syscfg-copro-state = <&tamp 0x148 0xFFFFFFFF>;
 			st,syscfg-pdds = <&pwr_mcu 0x0 0x1>;

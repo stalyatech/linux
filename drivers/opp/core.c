@@ -985,6 +985,7 @@ static struct opp_table *_allocate_opp_table(struct device *dev, int index)
 				ret);
 		}
 		else {
+			_remove_opp_dev(opp_dev, opp_table);
 			kfree(opp_table);
 			return ERR_PTR(-EPROBE_DEFER);
 		}

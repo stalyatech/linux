@@ -203,6 +203,11 @@ static const struct stm32_desc_irq stm32mp1_desc_irq[] = {
 	{ .exti = 33, .irq_parent = 83, .chip = &stm32_exti_h_chip_direct },
 	{ .exti = 43, .irq_parent = 75, .chip = &stm32_exti_h_chip_direct },
 	{ .exti = 44, .irq_parent = 98, .chip = &stm32_exti_h_chip_direct },
+	{ .exti = 47, .irq_parent = 93, .chip = &stm32_exti_h_chip_direct },
+	{ .exti = 48, .irq_parent = 138, .chip = &stm32_exti_h_chip_direct },
+	{ .exti = 50, .irq_parent = 139, .chip = &stm32_exti_h_chip_direct },
+	{ .exti = 52, .irq_parent = 140, .chip = &stm32_exti_h_chip_direct },
+	{ .exti = 53, .irq_parent = 141, .chip = &stm32_exti_h_chip_direct },
 	{ .exti = 54, .irq_parent = 135, .chip = &stm32_exti_h_chip_direct },
 	{ .exti = 61, .irq_parent = 100, .chip = &stm32_exti_h_chip_direct },
 	{ .exti = 65, .irq_parent = 144, .chip = &stm32_exti_h_chip },
@@ -424,6 +429,16 @@ static void stm32_irq_ack(struct irq_data *d)
 	irq_gc_unlock(gc);
 }
 
+/* directly set the target bit without reading first. */
+static inline void stm32_exti_write_bit(struct irq_data *d, u32 reg)
+{
+	struct stm32_exti_chip_data *chip_data = irq_data_get_irq_chip_data(d);
+	void __iomem *base = chip_data->host_data->base;
+	u32 val = BIT(d->hwirq % IRQS_PER_BANK);
+
+	writel_relaxed(val, base + reg);
+}
+
 static inline u32 stm32_exti_set_bit(struct irq_data *d, u32 reg)
 {
 	struct stm32_exti_chip_data *chip_data = irq_data_get_irq_chip_data(d);
@@ -457,9 +472,9 @@ static void stm32_exti_h_eoi(struct irq_data *d)
 
 	raw_spin_lock(&chip_data->rlock);
 
-	stm32_exti_set_bit(d, stm32_bank->rpr_ofst);
+	stm32_exti_write_bit(d, stm32_bank->rpr_ofst);
 	if (stm32_bank->fpr_ofst != UNDEF_REG)
-		stm32_exti_set_bit(d, stm32_bank->fpr_ofst);
+		stm32_exti_write_bit(d, stm32_bank->fpr_ofst);
 
 	raw_spin_unlock(&chip_data->rlock);
 
@@ -644,8 +659,8 @@ static struct irq_chip stm32_exti_h_chip_direct = {
 	.name			= "stm32-exti-h-direct",
 	.irq_eoi		= irq_chip_eoi_parent,
 	.irq_ack		= irq_chip_ack_parent,
-	.irq_mask		= irq_chip_mask_parent,
-	.irq_unmask		= irq_chip_unmask_parent,
+	.irq_mask		= stm32_exti_h_mask,
+	.irq_unmask		= stm32_exti_h_unmask,
 	.irq_retrigger		= irq_chip_retrigger_hierarchy,
 	.irq_set_type		= irq_chip_set_type_parent,
 	.irq_set_wake		= stm32_exti_h_set_wake,
@@ -689,7 +704,7 @@ static int stm32_exti_h_domain_alloc(struct irq_domain *dm,
 
 		return irq_domain_alloc_irqs_parent(dm, virq, 1, &p_fwspec);
 	} else {
-		if (desc->irq_parent >= 0) {
+		if (desc->irq_parent) {
 			p_fwspec.fwnode = dm->parent->fwnode;
 			p_fwspec.param_count = 3;
 			p_fwspec.param[0] = GIC_SPI;

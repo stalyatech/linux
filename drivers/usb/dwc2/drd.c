@@ -7,6 +7,7 @@
  * Author(s): Amelie Delaunay <amelie.delaunay@st.com>
  */
 
+#include <linux/clk.h>
 #include <linux/iopoll.h>
 #include <linux/platform_device.h>
 #include <linux/usb/role.h>
@@ -25,9 +26,9 @@ static void dwc2_ovr_init(struct dwc2_hsotg *hsotg)
 	gotgctl &= ~(GOTGCTL_BVALOVAL | GOTGCTL_AVALOVAL | GOTGCTL_VBVALOVAL);
 	dwc2_writel(hsotg, gotgctl, GOTGCTL);
 
-	dwc2_force_mode(hsotg, false);
-
 	spin_unlock_irqrestore(&hsotg->lock, flags);
+
+	dwc2_force_mode(hsotg, (hsotg->dr_mode == USB_DR_MODE_HOST));
 }
 
 static int dwc2_ovr_avalid(struct dwc2_hsotg *hsotg, bool valid)
@@ -70,6 +71,7 @@ static int dwc2_drd_role_sw_set(struct device *dev, enum usb_role role)
 {
 	struct dwc2_hsotg *hsotg = dev_get_drvdata(dev);
 	unsigned long flags;
+	int already = 0;
 
 	/* Skip session not in line with dr_mode */
 	if ((role == USB_ROLE_DEVICE && hsotg->dr_mode == USB_DR_MODE_HOST) ||
@@ -85,43 +87,45 @@ static int dwc2_drd_role_sw_set(struct device *dev, enum usb_role role)
 	}
 #endif
 
+	/*
+	 * In case of USB_DR_MODE_PERIPHERAL, clock is disabled at the end of
+	 * the probe and enabled on udc_start.
+	 * If role-switch set is called before the udc_start, we need to enable
+	 * the clock to read/write GOTGCTL and GUSBCFG registers to override
+	 * mode and sessions. It is the case if cable is plugged at boot.
+	 */
+	if (!hsotg->ll_hw_enabled && hsotg->clk) {
+		int ret = clk_prepare_enable(hsotg->clk);
+		if (ret)
+			return ret;
+	}
+
 	spin_lock_irqsave(&hsotg->lock, flags);
 
 	if (role == USB_ROLE_HOST) {
-		if (dwc2_ovr_avalid(hsotg, true))
-			goto unlock;
-
-		if (hsotg->dr_mode == USB_DR_MODE_OTG)
-			/*
-			 * This will raise a Connector ID Status Change
-			 * Interrupt - connID A
-			 */
-			dwc2_force_mode(hsotg, true);
+		already = dwc2_ovr_avalid(hsotg, true);
 	} else if (role == USB_ROLE_DEVICE) {
-		if (dwc2_ovr_bvalid(hsotg, true))
-			goto unlock;
-
-		if (hsotg->dr_mode == USB_DR_MODE_OTG)
-			/*
-			 * This will raise a Connector ID Status Change
-			 * Interrupt - connID B
-			 */
-			dwc2_force_mode(hsotg, false);
-
+		already = dwc2_ovr_bvalid(hsotg, true);
 		/* This clear DCTL.SFTDISCON bit */
 		dwc2_hsotg_core_connect(hsotg);
 	} else {
 		if (dwc2_is_device_mode(hsotg)) {
-		    if (!dwc2_ovr_bvalid(hsotg, false))
-			/* This set DCTL.SFTDISCON bit */
-			dwc2_hsotg_core_disconnect(hsotg);
+			if (!dwc2_ovr_bvalid(hsotg, false))
+				/* This set DCTL.SFTDISCON bit */
+				dwc2_hsotg_core_disconnect(hsotg);
 		} else {
 			dwc2_ovr_avalid(hsotg, false);
 		}
 	}
 
-unlock:
 	spin_unlock_irqrestore(&hsotg->lock, flags);
+
+	if (!already && hsotg->dr_mode == USB_DR_MODE_OTG)
+		/* This will raise a Connector ID Status Change Interrupt */
+		dwc2_force_mode(hsotg, role == USB_ROLE_HOST);
+
+	if (!hsotg->ll_hw_enabled && hsotg->clk)
+		clk_disable_unprepare(hsotg->clk);
 
 	dev_dbg(hsotg->dev, "%s-session valid\n",
 		role == USB_ROLE_NONE ? "No" :
