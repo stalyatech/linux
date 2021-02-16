@@ -32,11 +32,11 @@
 	};
 
 	wifi_pwrseq: wifi-pwrseq {
-		compatible = "mmc-pwrseq-simple";
-		reset-gpios = <&gpiob 14 GPIO_ACTIVE_LOW>;
+		compatible = "mmc-pwrseq-sd8801";
+		power-off-signal-wait-ms = <5>;
+		power-on-signal-wait-ms = <50>;
+		wake-up-signal-wait-ms = <5>;
+		powerdown-gpios = <&gpioa 15 GPIO_ACTIVE_LOW>;
+		wakeup-gpios = <&gpiob 9 GPIO_ACTIVE_HIGH>;
 	};
-};
-
-&optee {
-	status = "okay";
 };

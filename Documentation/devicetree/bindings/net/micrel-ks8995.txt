@@ -1,7 +1,7 @@
 Micrel KS8995 SPI controlled Ethernet Switch families
 
 Required properties (according to spi-bus.txt):
-- compatible: either "micrel,ks8995", "micrel,ksz8864" or "micrel,ksz8795"
+- compatible: either "micrel,ks8995", "micrel,ksz8864", micrel,ksz8795 or "micrel,ksz8794"
 
 Optional properties:
 - reset-gpios : phandle of gpio that will be used to reset chip during probe

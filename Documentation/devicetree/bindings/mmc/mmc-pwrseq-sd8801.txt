@@ -1,0 +1,22 @@
+* Marvell SD8801 power sequence provider
+
+Required properties:
+- compatible: must be "mmc-pwrseq-sd8801".
+- powerdown-gpios: contains a power down GPIO specifier with the
+		   default active state
+- wakeup-gpios: contains a wake-up GPIO specifier with the default
+		   active state
+- power-on-signal-wait-ms : Delay in ms after de-asserting the 
+	powerdown-gpios (if any)
+- wake-up-signal-wait-ms : Delay in ms after de-asserting the 
+	wakeup-gpios (if any)
+
+Example:
+
+	wifi_pwrseq: wifi-pwrseq {
+		compatible = "mmc-pwrseq-sd8801";
+		power-on-signal-wait-ms = <100>
+		wake-up-signal-wait-ms = <100>
+		powerdown-gpios = <&gpiob 14 GPIO_ACTIVE_LOW>;
+		wakeup-gpios = <&gpioe 4 GPIO_ACTIVE_HIGH>;
+	};
