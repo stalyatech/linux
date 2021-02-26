@@ -198,6 +198,17 @@
 		gpios = <&gpioc 6 GPIO_ACTIVE_HIGH>;
        	states = <3300000 1 0 0>;	
 	};
+
+	usb_phy_tuning: usb-phy-tuning {
+		st,hs-dc-level = <2>;
+		st,fs-rftime-tuning;
+		st,hs-rftime-reduction;
+		st,hs-current-trim = <15>;
+		st,hs-impedance-trim = <1>;
+		st,squelch-level = <3>;
+		st,hs-rx-offset = <2>;
+		st,no-lsfs-sc;
+	};
 };
 
 &adc {
@@ -246,14 +257,14 @@
 };
 
 &ethernet0 {
-	status = "okay";
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&eth0_pins_default>;
 	pinctrl-1 = <&eth0_pins_sleep>;
-	#address-cells = <1>;
-	#size-cells = <0>;
 	phy-mode = "rmii";
 	phy-supply = <&vdd_eth>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
 
 	fixed-link {
 		speed = <100>;
@@ -419,12 +430,14 @@
 	dsa_ksz8794: ksz8794@0 {
 		compatible = "microchip,ksz8794";
 		reg = <0>;
-		reset-gpios = <&gpioe 2 GPIO_ACTIVE_LOW>;
 		phy-mode = "rmii";
+		reset-gpios = <&gpioe 2 GPIO_ACTIVE_LOW>;
 
-		spi-max-frequency = <5000000>;
+		spi-max-frequency = <10000000>;
 		spi-cpha;
 		spi-cpol;
+		interrupt-parent = <&gpioa>;
+		interrupts = <14 IRQ_TYPE_EDGE_FALLING>;
 		status = "okay";
 
 		ports {
@@ -519,14 +532,12 @@
 
 &usbphyc_port0 {
 	phy-supply = <&vdd_usb>;
-	vdda1v1-supply = <&reg11>;
-	vdda1v8-supply = <&reg18>;
+	st,phy-tuning = <&usb_phy_tuning>;
 };
 
 &usbphyc_port1 {
 	phy-supply = <&vdd_usb>;
-	vdda1v1-supply = <&reg11>;
-	vdda1v8-supply = <&reg18>;
+	st,phy-tuning = <&usb_phy_tuning>;
 };
 
 &usbh_ehci {
